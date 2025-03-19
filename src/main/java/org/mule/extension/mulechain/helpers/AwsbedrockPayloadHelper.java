@@ -56,6 +56,16 @@ public class AwsbedrockPayloadHelper {
           .build();
 
   }
+  
+  private static InvokeModelRequest createInvokeRequestWithGuardrails(String modelId, String nativeRequest, String guardrailIdentifier, String guardrailVersion) {
+	    return InvokeModelRequest.builder()
+	          .body(SdkBytes.fromUtf8String(nativeRequest))
+	          .modelId(modelId)
+	          .guardrailIdentifier(guardrailIdentifier)
+	          .guardrailVersion(guardrailVersion)
+	          .build();
+
+	  }
 
   public static Region getRegion(String region){
     switch (region) {
@@ -290,7 +300,14 @@ private static String getLlamaText(String prompt, AwsbedrockParameters awsBedroc
 
     try {
         // Encode and send the request to the Bedrock Runtime.
-        InvokeModelRequest request = createInvokeRequest(awsBedrockParameters.getModelName(), nativeRequest);
+        InvokeModelRequest request = null;
+        
+        if(isNotEmpty(awsBedrockParameters.getGuardrailIdentifier())
+        		&& isNotEmpty(awsBedrockParameters.getGuardrailVersion())) {
+        	request = createInvokeRequestWithGuardrails(awsBedrockParameters.getModelName(), nativeRequest, awsBedrockParameters.getGuardrailIdentifier(), awsBedrockParameters.getGuardrailVersion());
+        }else {
+        	request = createInvokeRequest(awsBedrockParameters.getModelName(), nativeRequest);
+        }
 
         System.out.println("Native request: " + nativeRequest);
 
@@ -528,6 +545,13 @@ public static String listCustomModels(AwsbedrockConfiguration configuration, Aws
     
         }
 
+    /**
+	 * Returns true if the passed string is non-null, and contains one or more
+	 * characters that are not spaces.
+	 */
+	private static boolean isNotEmpty(String string) {
+		return (string != null && string.trim().length() > 0);
+	}
 
 
 }
